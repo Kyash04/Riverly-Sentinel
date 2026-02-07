@@ -1,0 +1,20 @@
+# Ignore LiDAR Data (Too huge for GitHub)
+tiles/*.tif
+tiles/*.tfw
+tiles/*.ovr
+tiles/*.xml
+
+# Ignore Frontend Dependencies (Too huge, npm install recreates them)
+frontend/node_modules/
+frontend/dist/
+
+# Ignore Python Cache & Envs
+__pycache__/
+*.pyc
+.cache.sqlite
+venv/
+env/
+
+# Ignore System Junk
+.DS_Store
+Thumbs.db
