@@ -43,10 +43,10 @@ try:
     )
     
     df = pd.DataFrame({"date": date_range, "rain_mm": daily_rain_sum})
-    print(f"✅ Downloaded {len(df)} days of real weather history.")
+    print(f"Downloaded {len(df)} days of real weather history.")
 
 except Exception as e:
-    print(f"❌ API Error: {e}")
+    print(f"API Error: {e}")
     exit()
 
 # 3. CALCULATE DISCHARGE & RISK (The Hydrology Logic)
@@ -80,13 +80,13 @@ def calculate_hydrology(row):
     
     return pd.Series([discharge, risk])
 
-print("⚙️ Applying Hydrological Rating Curve...")
+print("Applying Hydrological Rating Curve...")
 df[['discharge_cusecs', 'risk_label']] = df.apply(calculate_hydrology, axis=1)
 
 # Clean up (remove NaNs)
 df = df.dropna()
 
-print("📊 Training Data Summary:")
+print("Training Data Summary:")
 print(f"   - Total Days: {len(df)}")
 print(f"   - Dry Days (0mm): {len(df[df['rain_mm'] == 0])}")
 print(f"   - Flood Days (Risk 2): {len(df[df['risk_label'] == 2])}")
@@ -99,4 +99,4 @@ model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X, y)
 
 joblib.dump(model, "flood_model.pkl")
-print("✅ Real-Data AI Trained & Saved as 'flood_model.pkl'")
+print("Real-Data AI Trained & Saved as 'flood_model.pkl'")

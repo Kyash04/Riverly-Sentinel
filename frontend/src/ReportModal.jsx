@@ -7,7 +7,6 @@ import { X, Download, Activity, AlertTriangle, Home } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-// Added props: simulationMode, simRain
 const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
   const [forecast, setForecast] = useState([]);
   const [generating, setGenerating] = useState(false);

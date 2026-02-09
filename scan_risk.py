@@ -52,4 +52,4 @@ output = {
 with open("frontend/public/death_zones.json", "w") as f:
     json.dump(output, f)
 
-print(f"✅ Found {len(risk_points)} Danger Points. Saved to frontend/public/death_zones.json")
+print(f"Found {len(risk_points)} Danger Points. Saved to frontend/public/death_zones.json")
