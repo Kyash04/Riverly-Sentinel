@@ -1,3 +1,4 @@
+#scan_risk.py
 import rasterio
 import json
 import numpy as np
@@ -11,7 +12,7 @@ RISK_THRESHOLD = 296.0  # Meters (Elevation of Har Ki Pauri Banks)
 SAMPLE_STEP = 100 # Check every 100th point (Optimization for speed)
 
 risk_points = []
-print("🔍 Scanning LiDAR Geometry for Death Zones...")
+print("Scanning LiDAR Geometry for Death Zones...")
 
 tif_files = glob(os.path.join(TILE_FOLDER, "*.tif"))
 

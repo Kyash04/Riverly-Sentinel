@@ -11,22 +11,27 @@ const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
   const [forecast, setForecast] = useState([]);
   const [generating, setGenerating] = useState(false);
 
-  // 1. Fetch Forecast (Pass Simulation Params)
   useEffect(() => {
+    // 1. Controller for cancelling stale requests
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     let url = 'http://127.0.0.1:5000/get-forecast';
     if (simulationMode) url += `?sim_rain=${simRain}`;
 
-    fetch(url)
+    fetch(url, { signal })
       .then(res => res.json())
-      .then(data => setForecast(data));
+      .then(data => setForecast(data))
+      .catch(err => {
+          if (err.name !== 'AbortError') console.error("Forecast Error:", err);
+      });
+
+    return () => controller.abort();
   }, [simulationMode, simRain]);
 
-  // 2. FIXED PDF GENERATION (Captures Full Scroll Height)
   const generatePDF = async () => {
     setGenerating(true);
     const element = document.getElementById('report-content');
-    
-    // Hack: Temporarily expand height to fit content for screenshot
     const originalHeight = element.style.height;
     const originalOverflow = element.style.overflow;
     element.style.height = 'auto';
@@ -34,9 +39,9 @@ const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
 
     try {
         const canvas = await html2canvas(element, { 
-            scale: 2, // High resolution
+            scale: 2, 
             useCORS: true,
-            scrollY: -window.scrollY // Fix for scrolling offset
+            scrollY: -window.scrollY
         });
         
         const imgData = canvas.toDataURL('image/png');
@@ -49,7 +54,6 @@ const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
     } catch(e) {
         console.error("PDF Gen Error:", e);
     } finally {
-        // Restore UI styles
         element.style.height = originalHeight;
         element.style.overflow = originalOverflow;
         setGenerating(false);
@@ -60,9 +64,9 @@ const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
     labels: forecast.map(f => f.time),
     datasets: [
       {
-        label: 'Predicted River Discharge (cusecs)',
+        label: 'Discharge Hydrograph (SCS-CN Method)',
         data: forecast.map(f => f.discharge),
-        borderColor: weather.risk >= 2 ? '#ef4444' : '#3b82f6', // Red line if critical
+        borderColor: weather.risk >= 2 ? '#ef4444' : '#3b82f6',
         backgroundColor: weather.risk >= 2 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
         fill: true,
         tension: 0.4,
@@ -91,7 +95,6 @@ const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
         borderRadius: '16px', border: '1px solid #334155', display: 'flex', flexDirection: 'column'
       }}>
         
-        {/* Header */}
         <div style={{padding: '20px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <h2 style={{color: 'white', margin: 0}}>📄 Floodplain Analysis Report</h2>
             <div style={{display:'flex', gap:'10px'}}>
@@ -107,7 +110,6 @@ const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
             </div>
         </div>
 
-        {/* Content - Set overflow-y: auto here */}
         <div id="report-content" style={{padding: '30px', overflowY: 'auto', background: '#0f172a', color: 'white'}}>
             
             <div style={{marginBottom: '30px', borderBottom: '2px solid #3b82f6', paddingBottom: '10px'}}>
@@ -121,14 +123,14 @@ const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '30px'}}>
                 <div style={{background: '#1e293b', padding: '20px', borderRadius: '12px', textAlign: 'center'}}>
                     <Activity size={32} color="#38bdf8" style={{marginBottom: '10px'}}/>
-                    <div style={{color: '#94a3b8', fontSize: '12px'}}>CURRENT DISCHARGE</div>
+                    <div style={{color: '#94a3b8', fontSize: '12px'}}>PEAK DISCHARGE</div>
                     <div style={{fontSize: '24px', fontWeight: 'bold'}}>{weather.discharge.toLocaleString()} cusecs</div>
                 </div>
                 <div style={{background: weather.risk >= 2 ? '#450a0a' : '#1e293b', padding: '20px', borderRadius: '12px', textAlign: 'center', border: weather.risk >=2 ? '1px solid red' : 'none'}}>
                     <AlertTriangle size={32} color={weather.risk >= 2 ? "#ef4444" : "#fbbf24"} style={{marginBottom: '10px'}}/>
-                    <div style={{color: '#94a3b8', fontSize: '12px'}}>RISK LEVEL</div>
-                    <div style={{fontSize: '24px', fontWeight: 'bold', color: weather.risk >= 2 ? '#ef4444' : 'white'}}>
-                        {weather.risk === 0 ? "LOW" : weather.risk === 1 ? "MODERATE" : "CRITICAL"}
+                    <div style={{color: '#94a3b8', fontSize: '12px'}}>PROBABILITY</div>
+                    <div style={{fontSize: '18px', fontWeight: 'bold', color: weather.risk >= 2 ? '#ef4444' : 'white'}}>
+                        {weather.return_period}
                     </div>
                 </div>
                 <div style={{background: '#1e293b', padding: '20px', borderRadius: '12px', textAlign: 'center'}}>
@@ -141,25 +143,25 @@ const ReportModal = ({ onClose, weather, simulationMode, simRain }) => {
             </div>
 
             <div style={{background: '#1e293b', padding: '20px', borderRadius: '12px', marginBottom: '30px'}}>
-                <h3 style={{borderBottom: '1px solid #334155', paddingBottom: '10px', marginTop: 0}}>📈 12-Hour Forecast (Zonation Prediction)</h3>
+                <h3 style={{borderBottom: '1px solid #334155', paddingBottom: '10px', marginTop: 0}}>📈 Flood Hydrograph (SCS-CN Method)</h3>
                 <div style={{height: '250px'}}>
                     {forecast.length > 0 ? <Line data={chartData} options={chartOptions} /> : <p>Loading Forecast...</p>}
                 </div>
             </div>
 
             <div style={{background: 'rgba(59, 130, 246, 0.1)', padding: '20px', borderRadius: '12px', borderLeft: '4px solid #3b82f6'}}>
-                <h3 style={{marginTop: 0, color: '#3b82f6'}}>🤖 AI System Advisory</h3>
+                <h3 style={{marginTop: 0, color: '#3b82f6'}}>🤖 Hydrological Analysis</h3>
                 <p style={{lineHeight: '1.6', color: '#cbd5e1'}}>
-                    Based on real-time LIDAR analysis and the hydrological rating curve, the system detects 
-                    <strong> {weather.risk >= 2 ? "CRITICAL FLOOD CONDITIONS" : "stable river flow"}</strong>. 
+                    <strong>Analysis Method:</strong> SCS-CN (Soil Conservation Service Curve Number) & Gumbel Extreme Value Distribution.<br/><br/>
+                    The system detects a <strong>{weather.return_period}</strong> based on current rainfall intensity. 
                     {weather.risk >= 2 
-                        ? " Immediate evacuation of Zone A (Low-lying river banks) is recommended. The forecast indicates sustained high discharge levels for the next 4 hours." 
-                        : " No immediate floodplain inundation is predicted. Standard monitoring protocols are in effect."}
+                        ? " Immediate evacuation of Zone A (Low-lying river banks) is recommended. The hydrograph indicates peak discharge will sustain for the next 4 hours." 
+                        : " Runoff is within channel capacity. No immediate floodplain inundation is predicted."}
                 </p>
             </div>
             
             <div style={{marginTop: '40px', textAlign: 'center', fontSize: '10px', color: '#475569'}}>
-                Generated by River.ly Sentinel • Powered by Open-Meteo & Govt LiDAR Data
+                Generated by River.ly Sentinel • Powered by Open-Meteo, IMD Gridded Data & Govt LiDAR
             </div>
 
         </div>
