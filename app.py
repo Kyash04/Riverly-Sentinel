@@ -24,8 +24,6 @@ except:
 
 # 2. Load LiDAR Tiles
 TILE_FOLDER = "tiles"
-print(f"Scanning {TILE_FOLDER}...")
-
 tile_datasets = []
 tif_files = glob(os.path.join(TILE_FOLDER, "*.tif"))
 coverage_bounds = [] 
@@ -50,85 +48,81 @@ if tif_files:
 
 transformer = Transformer.from_crs("EPSG:4326", "EPSG:32644", always_xy=True)
 
-# 3. Load & Pre-Process Catchment CSV
+# 3. Load & OPTIMIZE Catchment CSV
 try:
     catchment_df = pd.read_csv("catchment_points.csv")
     print(f"✅ Loaded {len(catchment_df)} Catchment Points.")
-    # Pre-calc static physics
+    
+    # --- OPTIMIZATION: Pre-Calculate Static Physics ---
+    # S and Ia depend only on CN, not on Rain. Calculate ONCE.
     catchment_df['S'] = (25400 / (catchment_df['cn'])) - 254
     catchment_df['Ia'] = 0.2 * catchment_df['S']
+    print("🚀 Physics Engine Optimized & Ready.")
+    
 except:
     print("⚠️ CSV Not Found. Run generate_catchment_csv.py first.")
     catchment_df = pd.DataFrame()
 
-# --- ADVANCED HYDROLOGICAL FUNCTIONS ---
+# --- HYDROLOGICAL FUNCTIONS ---
 
 def calculate_lag_time(rain_mm, soil_moisture):
-    """
-    Calculates Time-to-Peak (Lag Time) in Hours using SCS Lag Equation.
-    Formula: T_lag = (L^0.8 * (S + 1)^0.7) / (1900 * Y^0.5)
-    Adjusted dynamically based on Soil Saturation.
-    """
-    if rain_mm < 5: return 0 # No flood, no peak
-    
-    # Basin Constants (Haridwar Approx)
-    L = 30000 # Hydraulic Length (ft)
-    Y = 5     # Average Slope (%)
-    
-    # Adjust Retention (S) based on Soil Moisture (0.0 - 1.0)
-    # Wet soil = Lower S = Faster Flood
+    """Calculates Time-to-Peak (Lag Time) in Hours"""
+    if rain_mm < 5: return 0
+    L = 30000 # Hydraulic Length
+    Y = 5     # Slope
     S_adjusted = 10 * (1 - soil_moisture) 
-    
     numerator = (L ** 0.8) * ((S_adjusted + 1) ** 0.7)
     denominator = 1900 * (Y ** 0.5)
-    
     lag_hours = numerator / denominator
-    
-    # Heavy rain accelerates flow (Kinematic Wave adjustment)
-    if rain_mm > 100: lag_hours *= 0.8
-    
+    if rain_mm > 100: lag_hours *= 0.8 # Kinematic wave acceleration
     return round(lag_hours, 1)
 
 def calculate_impact(discharge):
-    """
-    Estimates Socio-Economic Impact based on Discharge thresholds.
-    These factors would be calibrated with real census data (WorldPop).
-    """
+    """Estimates People & Crops at Risk"""
     people_at_risk = 0
     crop_loss_acres = 0
-    
     if discharge > 50000:
-        # Linear approximation for demo
         excess_flow = discharge - 50000
-        people_at_risk = int(excess_flow * 0.025) # 25 people per 1000 cusecs
-        crop_loss_acres = int(excess_flow * 0.005) # 5 acres per 1000 cusecs
-        
+        people_at_risk = int(excess_flow * 0.025)
+        crop_loss_acres = int(excess_flow * 0.005)
     return people_at_risk, crop_loss_acres
 
 def calculate_distributed_discharge(rain_input_mm):
-    """Optimized Runoff Calculation (Vectorized)"""
+    """
+    Highly Optimized Vectorized Runoff Calculation.
+    Only processes active points.
+    """
     if catchment_df.empty: return []
     
+    # 1. Vectorized Rain Calculation
     local_rain = rain_input_mm * catchment_df['rain_weight']
     
+    # 2. Vectorized Runoff (Using pre-calculated Ia/S)
     term1 = (local_rain - catchment_df['Ia']) ** 2
     term2 = (local_rain - catchment_df['Ia'] + catchment_df['S'])
     
+    # Fast Numpy Where
     raw_runoff = np.where(local_rain > catchment_df['Ia'], term1 / term2, 0)
     
+    # 3. CRITICAL OPTIMIZATION: Filter only active points (>5mm)
+    # This prevents sending 10,000 "0mm" points to the frontend
     active_indices = np.where(raw_runoff > 5)[0]
-    if len(active_indices) == 0: return []
+    
+    if len(active_indices) == 0:
+        return []
         
     active_df = catchment_df.iloc[active_indices].copy()
     active_df['runoff_mm'] = raw_runoff[active_indices]
     
-    active_df['status'] = np.where(active_df['runoff_mm'] > 35, 2, 
-                          np.where(active_df['runoff_mm'] > 15, 1, 0))
+    # 4. Status Logic (Visual Thresholds)
+    active_df['status'] = np.where(active_df['runoff_mm'] > 35, 2,  # Red
+                          np.where(active_df['runoff_mm'] > 15, 1, 0)) # Orange
     
+    # 5. Convert only active points to list
     return active_df[['lat', 'lon', 'runoff_mm', 'status']].to_dict(orient='records')
 
 def calculate_scs_cn_discharge(rain_mm, dam_release_cusecs=0):
-    """Calculates Total River Discharge including Dam Releases"""
+    """Calculates Total River Discharge"""
     month = datetime.now().month
     is_monsoon = 6 <= month <= 9
     CN = 85 if is_monsoon else 65
@@ -140,13 +134,10 @@ def calculate_scs_cn_discharge(rain_mm, dam_release_cusecs=0):
     catchment_area_sqkm = 20000
     volume_m3 = catchment_area_sqkm * runoff_depth_mm * 1000
     discharge_cumecs = volume_m3 / 86400
-    
     base_flow = 500 if is_monsoon else 150
     
-    # Total = Runoff + Base Flow + UPSTREAM DAM RELEASE
-    total_cusecs = ((discharge_cumecs + base_flow) * 35.31) + dam_release_cusecs
-    
-    return float(round(total_cusecs, 0))
+    total = ((discharge_cumecs + base_flow) * 35.31) + dam_release_cusecs
+    return float(round(total, 0))
 
 def calculate_gumbel_return_period(rain_mm):
     if rain_mm < 10: return "Normal"
@@ -175,10 +166,9 @@ def tiles_coverage():
 
 @app.route('/predict-distributed', methods=['GET'])
 def predict_distributed():
-    # INPUTS: Rain, Soil, Dam (for What-If Scenarios)
     sim_rain = request.args.get('sim_rain')
-    sim_soil = request.args.get('sim_soil') # 0.0 to 1.0
-    sim_dam = request.args.get('sim_dam')   # Cusecs
+    sim_soil = request.args.get('sim_soil')
+    sim_dam = request.args.get('sim_dam')
     
     weather_info = {
         'rain': 0.0, 'temp': 25.0, 'humidity': 60, 'wind': 5.0,
@@ -187,7 +177,7 @@ def predict_distributed():
     }
 
     try:
-        # 1. Fetch Real Weather (Baseline)
+        # 1. Fetch Real Weather (Timeout restricted for speed)
         try:
             url = "https://api.open-meteo.com/v1/forecast"
             params = {
@@ -206,31 +196,28 @@ def predict_distributed():
             })
             
             if not sim_rain: weather_info['rain'] = curr['rain'] + curr['showers']
-            
-            # Auto-calculate Dam Release proxy based on Rain if not simulating
-            if weather_info['rain'] > 150: weather_info['dam_release'] = 20000
+            if weather_info['rain'] > 150: weather_info['dam_release'] = 20000 # Auto-dam trigger
             
             past_rains = resp['hourly']['rain']
             if len(past_rains) >= 120: weather_info['past_rain_sum'] = sum(past_rains[:120])
                 
         except: pass
 
-        # 2. Apply Simulation Overrides (What-If Mode)
+        # 2. Overrides
         if sim_rain: weather_info['rain'] = float(sim_rain)
         if sim_soil: weather_info['soil_moisture'] = float(sim_soil)
         if sim_dam: weather_info['dam_release'] = float(sim_dam)
 
-        # 3. Physics Calculations
         real_rain = weather_info['rain']
-        
-        # Distributed Model (Visuals)
+
+        # 3. Physics (Optimized)
         flood_points = calculate_distributed_discharge(real_rain)
+        # Limit visualization points to 3000 to prevent frontend lag
         if len(flood_points) > 3000: flood_points = random.sample(flood_points, 3000)
 
-        # Total Discharge (Visuals + Dam)
         est_discharge_cusecs = calculate_scs_cn_discharge(real_rain, weather_info['dam_release'])
         
-        # Advanced Features: Impact & Lag Time
+        # Advanced Features
         people, crops = calculate_impact(est_discharge_cusecs)
         lag_time_hours = calculate_lag_time(real_rain, weather_info['soil_moisture'])
 
@@ -241,13 +228,11 @@ def predict_distributed():
             probs = model.predict_proba(features)[0]
             confidence = round(max(probs) * 100, 1)
         except:
-            # Tuned Fallback
+            # Tuned Fallback: 140k = Critical
             risk_prediction = 2 if est_discharge_cusecs > 140000 else (1 if est_discharge_cusecs > 80000 else 0)
             confidence = 0.0
 
         return_period = calculate_gumbel_return_period(real_rain)
-        
-        # Smart Advisory
         adv_text = "Normal Flow."
         if risk_prediction == 2: adv_text = f"CRITICAL: Flood peak in {lag_time_hours}h. {people} people at risk."
         elif risk_prediction == 1: adv_text = f"WARNING: High runoff. Dam release: {weather_info['dam_release']} cusecs."
@@ -259,11 +244,11 @@ def predict_distributed():
             'wind_speed': weather_info['wind'],
             'soil_moisture': weather_info['soil_moisture'],
             'snow_depth': weather_info['snow_depth'],
-            'dam_release': weather_info['dam_release'], # Sending to frontend
+            'dam_release': weather_info['dam_release'],
             'total_discharge_cusecs': est_discharge_cusecs,
-            'impact_people': people,        # <--- New
-            'impact_crops': crops,          # <--- New
-            'lag_time_hours': lag_time_hours, # <--- New
+            'impact_people': people,
+            'impact_crops': crops,
+            'lag_time_hours': lag_time_hours,
             'distributed_points': flood_points,
             'return_period': return_period,
             'risk_level': risk_prediction,
@@ -276,18 +261,20 @@ def predict_distributed():
 
 @app.route('/check-location', methods=['POST'])
 def check_location():
-    # ... (Keep existing Logic - No changes needed for these features)
     data = request.json
     try:
         lat, lon = round(float(data.get('lat')), 4), round(float(data.get('lon')), 4)
         discharge = float(data.get('discharge', 0))
     except: return jsonify({'found': False, 'source': "Invalid"})
+    
     elevation, source = get_elevation_from_mosaic(lat, lon)
     if elevation is None: return jsonify({'found': False, 'source': source})
+    
     BASE_LEVEL = 292.5
     flood_rise = discharge / 50000
     water_surface_elevation = BASE_LEVEL + flood_rise
     status = "Terrain"; flood_depth = 0; is_active_river = False
+    
     if elevation < water_surface_elevation:
         is_active_river = True
         status = "Active Channel" if elevation < 294 else "Inundated Floodplain"
@@ -295,6 +282,7 @@ def check_location():
     elif elevation <= 293.5:
         is_active_river = True; status = "Deep Channel"; flood_depth = round(293.5 - elevation, 2)
     else: is_active_river = False; status = "Dry Terrain"
+    
     return jsonify({
         'found': True, 'elevation': round(elevation, 3), 'is_river': is_active_river,
         'status': status, 'flood_depth': flood_depth, 'local_discharge': discharge if is_active_river else 0,
@@ -303,7 +291,6 @@ def check_location():
 
 @app.route('/get-forecast', methods=['GET'])
 def get_forecast():
-    # Forecast logic remains the same (Optimized version)
     try:
         sim_rain = request.args.get('sim_rain')
         forecast_data = []
@@ -328,7 +315,7 @@ def get_forecast():
                 hourly_rains.append(base_rain * factor)
 
         for i, rain in enumerate(hourly_rains):
-            q = calculate_scs_cn_discharge(rain, 0) # Assume 0 dam release for forecast chart default
+            q = calculate_scs_cn_discharge(rain)
             risk = 2 if q > 140000 else (1 if q > 80000 else 0)
             forecast_data.append({
                 "time": (now + timedelta(hours=i)).strftime("%H:%M"),

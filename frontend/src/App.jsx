@@ -2,7 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import ReportModal from './ReportModal';
-import { Users, Droplets, Waves, Clock } from 'lucide-react'; // Make sure you have lucide-react installed
+// Ensure you have lucide-react installed: npm install lucide-react
+import { Users, Droplets, Waves, Clock, Wind, Thermometer, CloudRain } from 'lucide-react';
 
 mapboxgl.accessToken = "pk.eyJ1IjoieWFzaDE5MTMiLCJhIjoiY21sOWx3bzdhMDRscjNlczlyM3Yzcm1vZiJ9.HnuW9XI--r_uVlNM_IbLdQ";
 
@@ -10,18 +11,16 @@ function App() {
   const mapContainer = useRef(null);
   const map = useRef(null);
   
-  // Simulation Refs
   const simRainRef = useRef(0);
-  const simSoilRef = useRef(0.2); // New: Soil Slider
-  const simDamRef = useRef(0);    // New: Dam Slider
+  const simSoilRef = useRef(0.2);
+  const simDamRef = useRef(0);
   const simulationModeRef = useRef(false);
 
-  // State
   const [weather, setWeather] = useState({ 
     rain: 0, condition: '(Clear Sky)', temp: '--', humidity: '--', wind: '--',
     discharge: 5000, risk: 0, source: 'Init',
     soil_moisture: 0.2, snow_depth: 0, dam_release: 0,
-    impact_people: 0, impact_crops: 0, lag_time_hours: 0,
+    impact_people: 0, lag_time_hours: 0,
     confidence: 0, advisory: "Initializing...",
     return_period: "Normal"
   });
@@ -29,10 +28,9 @@ function App() {
   const [inspectData, setInspectData] = useState(null);
   const [simulationMode, setSimulationMode] = useState(false);
   
-  // Slider States
   const [simRain, setSimRain] = useState(0);
-  const [simSoil, setSimSoil] = useState(20); // %
-  const [simDam, setSimDam] = useState(0);    // cusecs
+  const [simSoil, setSimSoil] = useState(20);
+  const [simDam, setSimDam] = useState(0);
 
   const [time, setTime] = useState(new Date());
   const [showReport, setShowReport] = useState(false);
@@ -40,7 +38,6 @@ function App() {
 
   const addLog = (msg) => setLogs(prev => [{ time: new Date().toLocaleTimeString(), msg }, ...prev].slice(0, 50));
 
-  // Sync Refs
   useEffect(() => { 
       simRainRef.current = simRain; 
       simSoilRef.current = simSoil / 100; 
@@ -54,7 +51,6 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Map Setup
   useEffect(() => {
     if (map.current) return;
     map.current = new mapboxgl.Map({
@@ -139,8 +135,6 @@ function App() {
 
         try {
             const currentSimMode = simulationModeRef.current;
-            
-            // Build URL with all simulation params
             let url = 'http://127.0.0.1:5000/predict-distributed';
             if (currentSimMode) {
                 url += `?sim_rain=${simRainRef.current}`;
@@ -170,7 +164,6 @@ function App() {
                 snow_depth: data.snow_depth || 0,
                 dam_release: data.dam_release || 0,
                 
-                // NEW METRICS
                 impact_people: data.impact_people || 0,
                 impact_crops: data.impact_crops || 0,
                 lag_time_hours: data.lag_time_hours || 0,
@@ -179,7 +172,7 @@ function App() {
                 risk: riskLevel, 
                 source: "SCS-CN Distributed",
                 confidence: 98.5,
-                advisory: data.advisory, // Use backend smart advisory
+                advisory: data.advisory || "Normal Flow",
                 return_period: data.return_period || "Normal"
             }));
 
@@ -233,90 +226,108 @@ function App() {
             </div>
         </div>
 
-        {/* Mode Toggle */}
-        <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', marginBottom:'15px', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-            <span style={{fontSize:'11px', fontWeight:'600', color:'#cbd5e1', paddingLeft:'5px'}}>SYSTEM MODE</span>
-            <button 
-                onClick={() => {
-                    setSimulationMode(!simulationMode);
-                    addLog(simulationMode ? "🔄 Switched to SCENARIO SIMULATOR." : "🧪 Switched to LIVE MONITORING.");
-                }}
-                style={{
-                    background: simulationMode ? '#f59e0b' : '#10b981', border:'none', color:'white',
-                    padding:'4px 10px', borderRadius:'6px', cursor:'pointer', fontSize:'10px', fontWeight:'bold',
-                    transition: 'background 0.3s'
-                }}
-            >
-                {simulationMode ? "⚠️ WHAT-IF SIMULATOR" : "● LIVE MONITORING"}
-            </button>
+        {/* --- ROW 1: LIVE WEATHER (Restored) --- */}
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'8px'}}>
+             <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', textAlign:'center'}}>
+                <Thermometer size={14} color="#fca5a5" style={{margin:'0 auto 4px'}}/>
+                <span style={{fontSize:'8px', color:'#94a3b8', textTransform:'uppercase'}}>Temp</span><br/>
+                <strong style={{fontSize:'12px', color:'#e2e8f0'}}>{weather.temp}°C</strong>
+             </div>
+             <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', textAlign:'center'}}>
+                <Droplets size={14} color="#93c5fd" style={{margin:'0 auto 4px'}}/>
+                <span style={{fontSize:'8px', color:'#94a3b8', textTransform:'uppercase'}}>Humidity</span><br/>
+                <strong style={{fontSize:'12px', color:'#e2e8f0'}}>{weather.humidity}%</strong>
+             </div>
+             <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', textAlign:'center'}}>
+                <Wind size={14} color="#cbd5e1" style={{margin:'0 auto 4px'}}/>
+                <span style={{fontSize:'8px', color:'#94a3b8', textTransform:'uppercase'}}>Wind</span><br/>
+                <strong style={{fontSize:'12px', color:'#e2e8f0'}}>{weather.wind} <span style={{fontSize:'8px'}}>km/h</span></strong>
+             </div>
         </div>
 
-        {/* WHAT-IF SIMULATOR CONTROLS */}
-        {simulationMode && (
-            <div style={{marginBottom:'15px', padding:'10px', background:'rgba(245, 158, 11, 0.1)', borderRadius:'8px', border:'1px dashed #f59e0b'}}>
-                
-                {/* Rain Slider */}
-                <div style={{display:'flex', justifyContent:'space-between', fontSize:'10px', marginBottom:'2px', color:'#fcd34d'}}>
-                    <span>Rainfall Injection</span>
-                    <strong>{simRain} mm</strong>
-                </div>
-                <input type="range" min="0" max="300" value={simRain} onChange={(e) => setSimRain(parseInt(e.target.value))} style={{width:'100%', accentColor: '#f59e0b'}} />
-                
-                {/* Soil Slider */}
-                <div style={{display:'flex', justifyContent:'space-between', fontSize:'10px', marginBottom:'2px', marginTop:'8px', color:'#94a3b8'}}>
-                    <span>Soil Saturation</span>
-                    <strong>{simSoil}%</strong>
-                </div>
-                <input type="range" min="0" max="100" value={simSoil} onChange={(e) => setSimSoil(parseInt(e.target.value))} style={{width:'100%', accentColor: '#3b82f6'}} />
-
-                {/* Dam Slider */}
-                <div style={{display:'flex', justifyContent:'space-between', fontSize:'10px', marginBottom:'2px', marginTop:'8px', color:'#f87171'}}>
-                    <span>Upstream Dam Release</span>
-                    <strong>{simDam} cusecs</strong>
-                </div>
-                <input type="range" min="0" max="50000" step="1000" value={simDam} onChange={(e) => setSimDam(parseInt(e.target.value))} style={{width:'100%', accentColor: '#ef4444'}} />
-
-            </div>
-        )}
-
-        {/* IMPACT METRICS (NEW) */}
+        {/* --- ROW 2: ADVANCED IMPACT --- */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'12px'}}>
              <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', textAlign:'center'}}>
-                <Clock size={16} color="#fbbf24" style={{margin:'0 auto 4px'}}/>
-                <span style={{fontSize:'8px', color:'#94a3b8', textTransform:'uppercase'}}>Time to Peak</span><br/>
+                <Clock size={14} color="#fbbf24" style={{margin:'0 auto 4px'}}/>
+                <span style={{fontSize:'8px', color:'#94a3b8', textTransform:'uppercase'}}>Lag Time</span><br/>
                 <strong style={{fontSize:'12px', color:'#e2e8f0'}}>{weather.lag_time_hours > 0 ? `${weather.lag_time_hours}h` : '--'}</strong>
              </div>
              <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', textAlign:'center'}}>
-                <Users size={16} color="#f87171" style={{margin:'0 auto 4px'}}/>
+                <Users size={14} color="#f87171" style={{margin:'0 auto 4px'}}/>
                 <span style={{fontSize:'8px', color:'#94a3b8', textTransform:'uppercase'}}>At Risk</span><br/>
                 <strong style={{fontSize:'12px', color:'#e2e8f0'}}>{weather.impact_people.toLocaleString()}</strong>
              </div>
              <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', textAlign:'center'}}>
-                <Waves size={16} color="#38bdf8" style={{margin:'0 auto 4px'}}/>
-                <span style={{fontSize:'8px', color:'#94a3b8', textTransform:'uppercase'}}>Dam Status</span><br/>
-                <strong style={{fontSize:'12px', color:'#e2e8f0'}}>{weather.dam_release > 0 ? "OPEN" : "CLOSED"}</strong>
+                <Waves size={14} color="#38bdf8" style={{margin:'0 auto 4px'}}/>
+                <span style={{fontSize:'8px', color:'#94a3b8', textTransform:'uppercase'}}>Dam</span><br/>
+                <strong style={{fontSize:'12px', color: weather.dam_release > 0 ? '#ef4444' : '#22c55e'}}>{weather.dam_release > 0 ? "OPEN" : "SAFE"}</strong>
              </div>
         </div>
 
-        {/* Discharge Display */}
-        <div style={{display:'grid', gridTemplateColumns:'1fr', gap:'12px', marginBottom:'15px'}}>
+        {/* --- ROW 3: RAIN & DISCHARGE --- */}
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'15px'}}>
             <div style={{background:'rgba(0,0,0,0.3)', padding:'12px', borderRadius:'12px'}}>
-                <span style={{fontSize:'10px', color:'#94a3b8', textTransform:'uppercase'}}>Total Discharge (River + Dam)</span><br/>
+                <span style={{fontSize:'10px', color:'#94a3b8', textTransform:'uppercase'}}>Precipitation</span><br/>
                 <div style={{display:'flex', alignItems:'baseline', gap:'4px'}}>
-                    <strong style={{fontSize:'28px', color:'#fbbf24', fontWeight:'800'}}>
+                    <strong style={{fontSize:'22px', color:'#38bdf8', fontWeight:'800'}}>{weather.rain}</strong>
+                    <span style={{fontSize:'11px', color:'#38bdf8'}}>mm</span>
+                </div>
+            </div>
+            <div style={{background:'rgba(0,0,0,0.3)', padding:'12px', borderRadius:'12px'}}>
+                <span style={{fontSize:'10px', color:'#94a3b8', textTransform:'uppercase'}}>Total Discharge</span><br/>
+                <div style={{display:'flex', alignItems:'baseline', gap:'4px'}}>
+                    <strong style={{fontSize:'22px', color:'#fbbf24', fontWeight:'800'}}>
                         {typeof weather.discharge === 'number' ? weather.discharge.toLocaleString() : '---'}
                     </strong>
-                    <span style={{fontSize:'12px', color:'#fbbf24'}}>cusecs</span>
+                    <span style={{fontSize:'9px', color:'#fbbf24'}}>cusecs</span>
                 </div>
             </div>
         </div>
 
-        {/* Status Bar */}
+        {/* MODE TOGGLE (FIXED LOGS) */}
+        <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', marginBottom:'15px'}}>
+            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
+                <span style={{fontSize:'11px', fontWeight:'600', color:'#cbd5e1'}}>SYSTEM MODE</span>
+                <button 
+                    onClick={() => {
+                        const newMode = !simulationMode;
+                        setSimulationMode(newMode);
+                        // FIX: Log what we SWITCHED TO (newMode)
+                        addLog(newMode ? "🧪 Switched to SCENARIO SIMULATOR." : "🔄 Switched to LIVE MONITORING.");
+                    }}
+                    style={{
+                        background: simulationMode ? '#f59e0b' : '#10b981', border:'none', color:'white',
+                        padding:'4px 10px', borderRadius:'6px', cursor:'pointer', fontSize:'10px', fontWeight:'bold'
+                    }}
+                >
+                    {simulationMode ? "⚠️ SIMULATOR" : "● LIVE"}
+                </button>
+            </div>
+
+            {simulationMode && (
+                <div style={{paddingTop:'5px', borderTop:'1px solid rgba(255,255,255,0.1)'}}>
+                    <div style={{display:'flex', justifyContent:'space-between', fontSize:'9px', color:'#fcd34d', marginBottom:'2px'}}>
+                        <span>Rainfall</span> <strong>{simRain} mm</strong>
+                    </div>
+                    <input type="range" min="0" max="300" value={simRain} onChange={(e) => setSimRain(parseInt(e.target.value))} style={{width:'100%', accentColor: '#fcd34d'}} />
+                    
+                    <div style={{display:'flex', justifyContent:'space-between', fontSize:'9px', color:'#93c5fd', marginTop:'6px', marginBottom:'2px'}}>
+                        <span>Soil Saturation</span> <strong>{simSoil}%</strong>
+                    </div>
+                    <input type="range" min="0" max="100" value={simSoil} onChange={(e) => setSimSoil(parseInt(e.target.value))} style={{width:'100%', accentColor: '#93c5fd'}} />
+                    
+                    <div style={{display:'flex', justifyContent:'space-between', fontSize:'9px', color:'#fca5a5', marginTop:'6px', marginBottom:'2px'}}>
+                        <span>Dam Release</span> <strong>{simDam} cusecs</strong>
+                    </div>
+                    <input type="range" min="0" max="50000" step="1000" value={simDam} onChange={(e) => setSimDam(parseInt(e.target.value))} style={{width:'100%', accentColor: '#fca5a5'}} />
+                </div>
+            )}
+        </div>
+
+        {/* STATUS BAR */}
         <div style={{
             background: weather.risk >= 2 ? 'linear-gradient(90deg, #7f1d1d 0%, #991b1b 100%)' : weather.risk === 1 ? '#7c2d12' : 'linear-gradient(90deg, #064e3b 0%, #10b981 100%)',
-            padding:'14px', borderRadius:'12px', textAlign:'center', transition:'0.5s',
-            boxShadow: weather.risk >= 2 ? '0 0 20px rgba(220, 38, 38, 0.4)' : 'none',
-            marginBottom: '15px'
+            padding:'12px', borderRadius:'12px', textAlign:'center', transition:'0.5s', marginBottom: '15px'
         }}>
             <div style={{fontSize:'9px', color:'rgba(255,255,255,0.8)', letterSpacing:'1px', marginBottom:'2px'}}>HYDROLOGICAL STATUS</div>
             <strong style={{fontSize:'16px', letterSpacing:'0.5px', textTransform:'uppercase'}}>
@@ -327,12 +338,10 @@ function App() {
             </div>
         </div>
 
-        {/* Advisory */}
+        {/* ADVISORY */}
         <div style={{ marginBottom: '15px' }}>
           <div style={{ background: 'rgba(0, 0, 0, 0.3)', borderLeft: '4px solid #facc15', padding: '10px', borderRadius: '4px', fontSize: '11px', lineHeight: '1.4', color: '#f1f5f9', fontFamily: 'monospace' }}>
-              <strong style={{ color: '#facc15', display:'block', marginBottom:'4px' }}>
-                  📢 LIVE ADVISORY:
-              </strong>
+              <strong style={{ color: '#facc15', display:'block', marginBottom:'4px' }}>📢 LIVE ADVISORY:</strong>
               {weather.advisory}
           </div>
         </div>
@@ -341,7 +350,7 @@ function App() {
             📄 GENERATE REPORT
         </button>
 
-        {/* Logs */}
+        {/* LOGS */}
         <div style={{ background: '#020617', borderRadius: '8px', padding: '10px', height: '100px', overflowY: 'auto', border: '1px solid #1e293b', fontSize: '10px', fontFamily: 'monospace' }}>
             <div style={{color:'#64748b', marginBottom:'5px', borderBottom:'1px solid #1e293b', paddingBottom:'2px'}}>SYSTEM LOGS (LIVE)</div>
             {logs.map((log, i) => (
@@ -380,6 +389,12 @@ function App() {
                         * Area is currently dry.
                     </div>
                 )}
+                 {inspectData.water_level > 0 && (
+                     <div style={{display:'flex', justifyContent:'space-between', marginTop:'4px'}}>
+                        <span style={{fontSize:'11px', color:'#94a3b8'}}>Hydraulic Level:</span>
+                        <strong style={{fontSize:'11px', color:'#cbd5e1'}}>{inspectData.water_level} m</strong>
+                    </div>
+                 )}
             </div>
         </div>
       )}
