@@ -2,10 +2,9 @@ import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import ReportModal from './ReportModal';
-// Ensure you have lucide-react installed: npm install lucide-react
 import { Users, Droplets, Waves, Clock, Wind, Thermometer, CloudRain } from 'lucide-react';
 
-mapboxgl.accessToken = "pk.eyJ1IjoieWFzaDE5MTMiLCJhIjoiY21sOWx3bzdhMDRscjNlczlyM3Yzcm1vZiJ9.HnuW9XI--r_uVlNM_IbLdQ";
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
 function App() {
   const mapContainer = useRef(null);
@@ -15,6 +14,9 @@ function App() {
   const simSoilRef = useRef(0.2);
   const simDamRef = useRef(0);
   const simulationModeRef = useRef(false);
+
+  // REF FOR LATEST DISCHARGE (Fixes stale state in click listener)
+  const dischargeRef = useRef(5000);
 
   const [weather, setWeather] = useState({ 
     rain: 0, condition: '(Clear Sky)', temp: '--', humidity: '--', wind: '--',
@@ -45,6 +47,9 @@ function App() {
   }, [simRain, simSoil, simDam]);
   
   useEffect(() => { simulationModeRef.current = simulationMode; }, [simulationMode]);
+
+  // Keep dischargeRef synced with state
+  useEffect(() => { dischargeRef.current = weather.discharge; }, [weather.discharge]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -101,11 +106,15 @@ function App() {
         setInspectData({ loading: true });
         addLog(`🔍 Probing Terrain at Lat: ${lat.toFixed(4)}...`);
         
+        // USE REF HERE: Gets the REAL-TIME discharge from the loop
+        const currentDischarge = dischargeRef.current || 5000;
+
         const res = await fetch('http://127.0.0.1:5000/check-location', {
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ 
-                lat, lon: lng, discharge: weather.discharge 
+                lat, lon: lng, 
+                discharge: currentDischarge // Sending live value
             })
         });
         const data = await res.json();
@@ -118,12 +127,12 @@ function App() {
             is_river: data.is_river,       
             status: data.status,
             flood_depth: data.flood_depth,
-            local_discharge: data.local_discharge,
+            local_discharge: data.local_discharge, // Using new dynamic field
             source: data.source,
             water_level: data.water_level
         });
     });
-  }, [weather.discharge]); 
+  }, []); // Run once on mount
 
   // --- DATA LOOP ---
   useEffect(() => {
@@ -201,11 +210,12 @@ function App() {
     return () => clearInterval(interval);
   }, []); 
 
+  // ... (Rest of JSX Return logic same as previous answer) ...
+  // Ensure the layout matches the previous correct version with 3 rows of metrics.
   return (
     <div style={{ width: "100vw", height: "100vh", fontFamily: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
       <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
       
-      {/* DASHBOARD PANEL */}
       <div style={{
         position: 'absolute', top: 20, left: 20, width: '380px',
         background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(12px)',
@@ -226,7 +236,7 @@ function App() {
             </div>
         </div>
 
-        {/* --- ROW 1: LIVE WEATHER (Restored) --- */}
+        {/* ROW 1: LIVE WEATHER */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'8px'}}>
              <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', textAlign:'center'}}>
                 <Thermometer size={14} color="#fca5a5" style={{margin:'0 auto 4px'}}/>
@@ -245,7 +255,7 @@ function App() {
              </div>
         </div>
 
-        {/* --- ROW 2: ADVANCED IMPACT --- */}
+        {/* ROW 2: ADVANCED IMPACT */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'8px', marginBottom:'12px'}}>
              <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', textAlign:'center'}}>
                 <Clock size={14} color="#fbbf24" style={{margin:'0 auto 4px'}}/>
@@ -264,7 +274,7 @@ function App() {
              </div>
         </div>
 
-        {/* --- ROW 3: RAIN & DISCHARGE --- */}
+        {/* ROW 3: RAIN & DISCHARGE */}
         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'15px'}}>
             <div style={{background:'rgba(0,0,0,0.3)', padding:'12px', borderRadius:'12px'}}>
                 <span style={{fontSize:'10px', color:'#94a3b8', textTransform:'uppercase'}}>Precipitation</span><br/>
@@ -284,7 +294,7 @@ function App() {
             </div>
         </div>
 
-        {/* MODE TOGGLE (FIXED LOGS) */}
+        {/* MODE TOGGLE */}
         <div style={{background:'rgba(255,255,255,0.05)', padding:'8px', borderRadius:'8px', marginBottom:'15px'}}>
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
                 <span style={{fontSize:'11px', fontWeight:'600', color:'#cbd5e1'}}>SYSTEM MODE</span>
@@ -292,7 +302,6 @@ function App() {
                     onClick={() => {
                         const newMode = !simulationMode;
                         setSimulationMode(newMode);
-                        // FIX: Log what we SWITCHED TO (newMode)
                         addLog(newMode ? "🧪 Switched to SCENARIO SIMULATOR." : "🔄 Switched to LIVE MONITORING.");
                     }}
                     style={{

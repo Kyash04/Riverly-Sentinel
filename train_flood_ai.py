@@ -10,22 +10,22 @@ import joblib
 
 print("Connecting to Open-Meteo Historical Archive (ERA5-Land)...")
 
-# 1. SETUP API CLIENT (Unchanged)
+# SETUP API CLIENT (Unchanged)
 cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
 retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
 openmeteo = openmeteo_requests.Client(session = retry_session)
 
-# 2. FETCH ADVANCED VARIABLES (Rain + Soil + Snow) - UPDATED
+# FETCHING ADVANCED VARIABLES (Rain + Soil + Snow) - UPDATED
 url = "https://archive-api.open-meteo.com/v1/archive"
 params = {
     "latitude": 29.956,
     "longitude": 78.18,
     "start_date": "1990-01-01",
-    "end_date": "2024-01-01", # Updated to ERA5-Land range
+    "end_date": "2024-01-01",
     "daily": [
-        "rain_sum", 
-        "soil_moisture_0_to_7cm_mean", # <--- NEW: Saturation Factor
-        "snowfall_sum"                 # <--- NEW: Melt Factor
+        "rain_sum",
+        "soil_moisture_0_to_7cm_mean",
+        "snowfall_sum"
     ],
     "timezone": "Asia/Kolkata"
 }
@@ -57,7 +57,7 @@ try:
         "snow_mm": daily_snow
     })
     
-    # --- NEW: Antecedent Rainfall (Rolling Sum) ---
+    # --- Antecedent Rainfall (Rolling Sum) ---
     # Adds "Memory" to the system (Last 5 days of rain)
     df['rain_last_5_days'] = df['rain_mm'].rolling(window=5).sum().fillna(0)
     
@@ -68,7 +68,7 @@ except Exception as e:
     print(f"API Error: {e}")
     exit()
 
-# 3. ADVANCED HYDROLOGY LOGIC - UPDATED
+# ADVANCED HYDROLOGY LOGIC - UPDATED
 def calculate_hydrology_advanced(row):
     month = row['date'].month
     is_monsoon = 6 <= month <= 9
@@ -103,8 +103,7 @@ print("Applying Advanced Hydrological Rating Curve...")
 df[['discharge_cusecs', 'risk_label']] = df.apply(calculate_hydrology_advanced, axis=1)
 df = df.dropna()
 
-# 4. TRAIN WITH NEW FEATURES - UPDATED
-# We now train the AI on Rain, Soil, Snow, AND Antecedent Rain!
+# 4. We now train the AI on Rain, Soil, Snow, AND Antecedent Rain!
 X = df[["rain_mm", "soil_moisture", "snow_mm", "rain_last_5_days", "discharge_cusecs"]]
 y = df["risk_label"]
 

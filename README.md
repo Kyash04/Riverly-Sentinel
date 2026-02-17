@@ -1,16 +1,13 @@
 # Team Riverly
 
-<div align="center">
+# AI-Driven River Health Dashboard
 
-  <h1 align="center">AI-Driven River Health Dashboard</h1>
-
-  <p align="center">
-    A next-generation disaster management dashboard for the <strong>Haridwar Ganga Basin</strong>. This dashboard combines real-time telemetry, historical climate data, and sub-meter precision LiDAR to predict flood risks and automate zonation alerts before disaster strikes.
-  </p>
+A next-generation **Hydrological Digital Twin & Flood Intelligence Platform** for the **Haridwar Ganga Basin**.  
+Riverly combines real-time weather telemetry, physics-based watershed modeling, AI prediction, and LiDAR terrain intelligence to simulate flood behavior and generate actionable disaster insights before crisis escalation.
 
 <p align="center">
   <a href="https://github.com/Kyash04/Riverly-Sentinel">
-    <img src="https://img.shields.io/badge/Status-Hackathon_Winner_🏆-FFD700?style=for-the-badge&logo=git&logoColor=white" alt="Hackathon Status">
+    <img src="https://img.shields.io/badge/Status-Riverathon 1.0_Most_Innovative_Idea_Award-FFD700?style=for-the-badge&logo=git&logoColor=white" alt="Hackathon Status">
   </a>
   <a href="https://github.com/Kyash04/Riverly-Sentinel">
     <img src="https://img.shields.io/badge/Stack-MERN_Alternative_(Python/React)-blue?style=for-the-badge&logo=react&logoColor=white" alt="Tech Stack">
@@ -25,111 +22,163 @@
 
 <br/>
 
-[**Explore the Docs »**](#getting-started)
-·
-[**View Demo**](#screenshots)
-·
-[**Report Bug**](https://github.com/Kyash04/Riverly-Sentinel/issues)
-·
-[**Request Feature**](https://github.com/Kyash04/Riverly-Sentinel/issues)
-
-</div>
+Explore the Docs · View Demo · Report Bug · Request Feature
 
 ---
 
-<details open="open">
-  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
-  <ol>
-    <li><a href="#about-the-project">About The Project</a></li>
-    <li><a href="#key-features">Key Features</a></li>
-    <li><a href="#technology-stack">Technology Stack</a></li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation--setup">Installation & Setup</a></li>
-        <li><a href="#the-crucial-manual-step-lidar-data"> Manual Data Setup</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#screenshots">Screenshots</a></li>
-    <li><a href="#project-structure">Project Structure</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributors">Contributors</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
+# Table of Contents
+
+1. About The Project  
+2. Key Features  
+3. Technology Stack  
+4. Getting Started  
+   - Prerequisites  
+   - Installation & Setup  
+   - Manual Data Setup  
+5. Usage  
+6. Screenshots  
+7. Project Structure  
+8. Roadmap  
+9. Contributors  
+10. Acknowledgments  
 
 ---
 
-## About The Project
+# About The Project
 
-**River Health Dashboard** is designed to solve a critical problem: outdated, static flood maps that fail during dynamic climate events. By creating a live **Digital Twin** of the river basin, authorities gain unprecedented situational awareness.
+River Health Dashboard solves a major limitation in traditional flood monitoring systems — **static flood maps that fail during dynamic climate events**.
 
-Unlike traditional systems that rely solely on rain gauges, our dashboard integrates **High-Resolution GeoTIFF LiDAR data** (official government sources) with an AI engine trained on **10 years of historical hydrological patterns** (2014-2024). This allows for precise estimation of river discharge and immediate visualization of inundated households in 3D.
+Instead of relying only on gauges or historical thresholds, Riverly creates a **live Digital Twin of the river basin** that continuously simulates hydrological behavior using:
 
-The system features a robust **"God Mode" Simulator**, allowing disaster response teams to wargame scenarios (e.g., _"What happens if a 300mm cloudburst hits tonight?"_) and generate actionable PDF reports instantly.
+- Real-time rainfall telemetry
+- Basin soil saturation memory
+- Terrain elevation from high-resolution LiDAR
+- Physics-guided runoff modeling
+- AI risk classification
 
----
+The system estimates river discharge, predicts flood propagation, and visualizes inundation risk spatially in 3D.
 
-## Key Features
-
-Riverly provides a comprehensive suite of tools focused on precision, prediction, and proactive response.
-
-* **AI-Powered Forecasting Engine:**
-    * Utilizes a **Random Forest Classifier** trained on a decade of climate data.
-    * Predicts river discharge (cusecs) and determines risk levels (Safe, Warning, Critical) with high accuracy.
-    * Provides a **12-Hour Forward Forecast** graph, moving beyond simple current-state monitoring.
-
-* **Precision LiDAR Zonation & 3D Visualization:**
-    * **Sub-Meter Accuracy:** Processes multi-gigabyte NHP/NMCG GeoTIFF files to map terrain elevation down to the centimeter.
-    * **Automated Death Zone Detection:** Algorithms scan terrain files to identify areas < 296m elevation, instantly visualizing red "danger zones" at risk of immediate inundation.
-    * **Immersive 3D Map:** Built on **Mapbox GL JS** for realistic terrain rendering and satellite imagery.
-
-* **"God Mode" Simulation Suite:**
-    * A dedicated sandbox environment for scenario testing.
-    * Manually inject extreme weather events (e.g., drag slider to "250mm Rainfall") to instantly visualize the theoretical flood wave and AI system response.
-
-* **Automated Actionable Reporting:**
-    * One-click generation of professional **Floodplain Analysis PDF Reports**.
-    * Includes forecast charts, current telemetry, estimated households at risk, and AI-generated advisory text for decision-makers.
-
-* **High-Performance Geospatial Querying:**
-    * **Smart Coordinate Optimization:** Implements intelligent precision rounding (~11m grid) to group nearby queries.
-    * **Zero-Latency Response:** Drastically reduces disk I/O operations on massive LiDAR datasets, ensuring instant elevation feedback even under high user load.
+Unlike conventional dashboards, Riverly allows disaster authorities to simulate extreme scenarios using a dedicated **“God Mode” Simulation Engine**, instantly observing how rainfall, soil moisture, or dam releases impact downstream flooding.
 
 ---
 
-## Technology Stack
+# Key Features
 
-The project utilizes a robust, decoupled architecture combining high-performance Python data processing with a modern React frontend.
+## AI-Powered Forecasting Engine
+
+- Physics-guided AI model trained on historical hydrological patterns.
+- Predicts **river discharge (cusecs)** and flood risk levels:
+  - Safe
+  - Warning
+  - Critical
+- Generates a **12-Hour Forward Forecast Hydrograph**.
+- Combines ML predictions with watershed runoff estimation.
+
+---
+
+## Hydrological Digital Twin Simulation
+
+- Real-time distributed runoff modeling across basin points.
+- Basin memory using soil moisture accumulation.
+- Continuous recalculation of discharge based on:
+  - Rainfall intensity
+  - Soil saturation
+  - Dam release conditions
+- Instant visualization of flood evolution.
+
+---
+
+## Precision LiDAR Zonation & 3D Visualization
+
+- Sub-meter terrain elevation from official GeoTIFF LiDAR datasets.
+- Automated danger-zone detection using terrain thresholds.
+- Realistic terrain rendering via Mapbox GL JS.
+- Click-anywhere hydraulic inspection showing:
+  - Local elevation
+  - Estimated flood depth
+  - Water level projection.
+
+---
+
+## “God Mode” Simulation Suite
+
+- Dedicated sandbox environment for scenario testing.
+- Inject extreme weather conditions instantly.
+- Simulate theoretical flood waves before real events occur.
+- Observe AI response and discharge escalation in real time.
+
+---
+
+## Automated Actionable Reporting
+
+- One-click generation of professional **Floodplain Analysis PDF Reports**.
+- Includes:
+  - Forecast charts
+  - Live telemetry snapshot
+  - Estimated households at risk
+  - AI-generated advisory text.
+
+---
+
+## High-Performance Geospatial Querying
+
+### Smart Coordinate Optimization
+Implements precision rounding (~11m grid) to group nearby elevation queries efficiently.
+
+### Near Zero-Latency Response
+Optimized LiDAR lookups minimize disk I/O, enabling fast terrain analysis even under continuous interaction.
+
+---
+
+## Technical Architecture
+
+### Backend Architecture (Python / Flask)
+The backend acts as the computational core of the Digital Twin.
+* **Physics Layer:** Implements the **SCS-CN** method to calculate direct runoff. It incorporates a Linear Rating Curve to translate discharge volume into water surface elevation (WSE) and uses Manning's Approximation to distribute local flow velocity based on channel depth.
+* **AI Layer:** A Random Forest Classifier acts as the decision support system. Trained on ERA5-Land Reanalysis data, it evaluates non-linear risk factors including antecedent rainfall and soil moisture saturation.
+* **Geospatial Processing:** Uses **Rasterio** to process high-resolution GeoTIFF LiDAR models. A pre-compiled `catchment_points.csv` acts as a geospatial index, allowing the backend to execute over 3,000 differential equations in milliseconds without parsing raw tiles on every request.
+
+### Frontend Architecture (React / Vite)
+The frontend serves as the interactive control room.
+* **3D Visualization Engine:** Built on **Mapbox GL JS**, rendering a 3D terrain layer with 1.5x vertical exaggeration to emphasize topography. Dynamic flood extents update at 1000ms polling intervals.
+* **State Management:** Utilizes React `useRef` hooks extensively to prevent stale closures within Mapbox click listeners, ensuring the inspection tool always evaluates terrain against the latest simulation discharge state.
+* **Reporting System:** Integrates **Chart.js** to render dynamic 12-hour hydrographs and utilizes `html2canvas`/`jspdf` for client-side serialization of the DOM into professional situation reports.
+
+---
+
+# Technology Stack
 
 | Category | Technology |
 | :--- | :--- |
-| **Frontend**    | ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Vite](https://img.shields.io/badge/-Vite-646CFF?style=flat-square&logo=vite&logoColor=white) ![Mapbox GL JS](https://img.shields.io/badge/-Mapbox-4264fb?style=flat-square&logo=mapbox&logoColor=white) ![Chart.js](https://img.shields.io/badge/-Chart.js-F5788D?style=flat-square&logo=chartdotjs&logoColor=white) |
-| **Backend API** | ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![Flask](https://img.shields.io/badge/-Flask-000000?style=flat-square&logo=flask&logoColor=white)                                                                                                                                                                                                                   |
-| **AI & ML**     | ![Scikit-learn](https://img.shields.io/badge/-Scikit_Learn-F7931E?style=flat-square&logo=scikit-learn&logoColor=white) ![Pandas](https://img.shields.io/badge/-Pandas-150458?style=flat-square&logo=pandas&logoColor=white) ![NumPy](https://img.shields.io/badge/-NumPy-013243?style=flat-square&logo=numpy&logoColor=white)                                                                                            |
-| **Geospatial**  | ![Rasterio](https://img.shields.io/badge/Rasterio-483B32?style=flat-square&logo=python&logoColor=white) ![PyProj](https://img.shields.io/badge/PyProj-3776AB?style=flat-square&logo=python&logoColor=white)                                                                                                                                                                                                              |     |
-| **Data & APIs** | Official NHP GeoTIFF LiDAR, Open-Meteo Historical & Live API                                                                                                                                                                                                                                                                                                                                                             |
+| **Frontend** | ![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black) ![Vite](https://img.shields.io/badge/-Vite-646CFF?style=flat-square&logo=vite&logoColor=white) ![Mapbox GL JS](https://img.shields.io/badge/-Mapbox-4264fb?style=flat-square&logo=mapbox&logoColor=white) ![Chart.js](https://img.shields.io/badge/-Chart.js-F5788D?style=flat-square&logo=chartdotjs&logoColor=white) |
+| **Backend API** | ![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white) ![Flask](https://img.shields.io/badge/-Flask-000000?style=flat-square&logo=flask&logoColor=white) |
+| **AI & ML** | ![Scikit-learn](https://img.shields.io/badge/-Scikit_Learn-F7931E?style=flat-square&logo=scikit-learn&logoColor=white) ![Pandas](https://img.shields.io/badge/-Pandas-150458?style=flat-square&logo=pandas&logoColor=white) ![NumPy](https://img.shields.io/badge/-NumPy-013243?style=flat-square&logo=numpy&logoColor=white) |
+| **Geospatial** | ![Rasterio](https://img.shields.io/badge/Rasterio-483B32?style=flat-square&logo=python&logoColor=white) ![PyProj](https://img.shields.io/badge/PyProj-3776AB?style=flat-square&logo=python&logoColor=white) |
+| **Data Sources** | ERA5-Land Reanalysis (via Open-Meteo), Govt LiDAR DEMs |
+
 
 ---
 
-## Getting Started
+# Getting Started
 
-To get a local copy up and running, please follow these steps critically.
+Follow these steps carefully to run the project locally.
 
-### Prerequisites
+---
 
-- **Python** (v3.9 or newer recommended)
-- **Node.js** (v16 or newer)
-- **Git**
+## Prerequisites
 
-### Installation & Setup
+- Python (v3.9 or newer)
+- Node.js (v16 or newer)
+- Git
 
-#### 1. Clone the Repository
+---
+
+## Installation & Setup
+
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Kyash04/Riverly-Sentinel.git
+git clone https://github.com/Kyash04/Riverly-Sentinel
 cd Riverly-Sentinel
 ```
 
@@ -198,18 +247,21 @@ The application will launch in your browser at `http://localhost:5173 `
 
 _Real-time telemetry showing safe conditions, with LiDAR inspection points visible along the river bank._
 ![Live Dashboard](./screenshots/dashboard_live.jpg)
+![Live Dashboard](./screenshots/dashboard_live2.jpg)
 
 ### 2. "God Mode" Simulation (Critical Flood)
 
-_Manual injection of 250mm rainfall triggering the AI model. The map instantly visualizes the massive red danger zones based on LiDAR data._
+_Manual injection of rainfall, soil saturation and the dam release triggering the AI model. The map instantly visualizes the danger zones in red, the warning zones in orange and the safe zones in blue based on LiDAR data._
 ![Simulation Mode](./screenshots/simulation_flood.jpg)
+![Simulation Mode](./screenshots/simulation_flood2.jpg)
+![Simulation Mode](./screenshots/simulation_flood3.jpg)
+![Simulation Mode](./screenshots/simulation_flood4.jpg)
 
 ### 3. Automated PDF Report Generation
 
-_An actionable report generated instantly, showing the 12-hour forecast curve and household risk assessment. The first picture demonstrates the scenario during live monitoring and the other 2 shows during the simulation mode._
+_An actionable report generated instantly, showing the 12-hour forecast curve and household risk assessment._
 ![PDF Report](./screenshots/pdf_report.jpg)
 ![PDF Report](./screenshots/pdf_report2.jpg)
-![PDF Report](./screenshots/pdf_report3.jpg)
 
 ## Project Structure
 
