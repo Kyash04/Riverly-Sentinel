@@ -300,9 +300,9 @@ Riverly-Sentinel/
 
 Made by **Team River.ly** for **[RIVERATHON]**.
 
-- **Yash Kumar** - [LinkedIn](linkedin.com/in/yash-kumar-dev) | [GitHub](https://github.com/Kyash04)
+- **Yash Kumar** - [LinkedIn](https://www.linkedin.com/in/yash-kumar-dev) | [GitHub](https://github.com/Kyash04)
 - **Swati Bharti** - [LinkedIn](https://www.linkedin.com/in/swati-bharti-29sb) | [GitHub](https://github.com/swati-bharti29)
-- **Nishu Priya** - [LinkedIn](linkedin.com/in/nishupriya0) | [GitHub](https://github.com/NishuPriya01)
+- **Nishu Priya** - [LinkedIn](https://www.linkedin.com/in/nishupriya0) | [GitHub](https://github.com/NishuPriya01)
 - **Kunal Kumar Jha** - [LinkedIn](https://www.linkedin.com/in/kunal-jha45) | [GitHub](https://github.com/Sasrirr)
 
 ## Acknowledgments
